@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DoS Tool</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #eee;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 2px solid #e94560;
+            margin-bottom: 30px;
+        }
+        
+        header h1 {
+            color: #e94560;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            color: #888;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid rgba(233, 69, 96, 0.3);
+        }
+        
+        .panel h2 {
+            color: #e94560;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #aaa;
+            font-size: 0.9em;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #333;
+            border-radius: 5px;
+            background: #0f0f23;
+            color: #fff;
+            font-size: 14px;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+        
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        button {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-attack {
+            background: linear-gradient(135deg, #e94560 0%, #c73e54 100%);
+            color: white;
+            width: 100%;
+        }
+        
+        .btn-attack:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(233, 69, 96, 0.4);
+        }
+        
+        .btn-stop {
+            background: linear-gradient(135deg, #666 0%, #444 100%);
+            color: white;
+            padding: 8px 15px;
+            font-size: 12px;
+        }
+        
+        .btn-stop:hover {
+            background: linear-gradient(135deg, #888 0%, #666 100%);
+        }
+        
+        .console {
+            background: #0a0a0a;
+            border-radius: 5px;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            border: 1px solid #333;
+        }
+        
+        .console-line {
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+        
+        .console-line.error { color: #ff5555; }
+        .console-line.success { color: #55ff55; }
+        .console-line.info { color: #5555ff; }
+        .console-line.warning { color: #ffaa00; }
+        
+        .attack-card {
+            background: rgba(233, 69, 96, 0.1);
+            border: 1px solid rgba(233, 69, 96, 0.3);
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .attack-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .attack-type {
+            font-weight: bold;
+            color: #e94560;
+        }
+        
+        .attack-status {
+            padding: 3px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        
+        .status-running { background: #00aa00; color: white; }
+        .status-completed { background: #0066cc; color: white; }
+        .status-failed { background: #cc0000; color: white; }
+        .status-stopped { background: #666; color: white; }
+        
+        .attack-details {
+            font-size: 12px;
+            color: #aaa;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        
+        .warning-box {
+            background: rgba(255, 170, 0, 0.1);
+            border: 1px solid #ffaa00;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .warning-icon {
+            font-size: 24px;
+        }
+        
+        .warning-text {
+            font-size: 14px;
+            color: #ffaa00;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .stat-box {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e94560;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        @media (max-width: 900px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            .row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>DoS Tool</h1>
+        </header>
+        
+        <div class="grid">
+            <div class="panel">
+                <h2>🎯 Configure Attack</h2>
+                
+                <div class="form-group">
+                    <label for="target">Target (IP or Domain)</label>
+                    <input type="text" id="target" placeholder="e.g., 192.168.1.100 or target.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="attack_type">Attack Type</label>
+                    <select id="attack_type">
+                        {% for key, value in attack_types.items() %}
+                        <option value="{{ key }}">{{ value }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="row">
+                    <div class="form-group">
+                        <label for="port">Port</label>
+                        <input type="number" id="port" value="80" min="1" max="65535">
+                    </div>
+                    <div class="form-group">
+                        <label for="duration">Duration (seconds)</label>
+                        <input type="number" id="duration" value="30" min="1" max="300">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="threads">Threads</label>
+                    <input type="number" id="threads" value="100" min="1" max="1000">
+                </div>
+                
+                <button class="btn-attack" onclick="startAttack()">🚀 Start Attack</button>
+            </div>
+            
+            <div class="panel">
+                <h2>📊 Active Attacks</h2>
+                <div id="active-attacks">
+                    <div class="empty-state">No active attacks</div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>📜 Live Console</h2>
+                <div class="console" id="console">
+                    <div class="console-line">Ready. Configure attack parameters and click Start.</div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>📈 Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-active">0</div>
+                        <div class="stat-label">Active</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-completed">0</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-total">0</div>
+                        <div class="stat-label">Total</div>
+                    </div>
+                </div>
+                
+                <h3 style="margin-top: 20px; margin-bottom: 10px; color: #888; font-size: 14px;">Attack History</h3>
+                <div id="attack-history" style="max-height: 200px; overflow-y: auto;">
+                    <div class="empty-state" style="padding: 20px;">No history</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const socket = io();
+        let activeAttacks = {};
+        
+        socket.on('connect', () => {
+            log('Connected to server', 'success');
+        });
+        
+        socket.on('disconnect', () => {
+            log('Disconnected from server', 'error');
+        });
+        
+        socket.on('attack_log', (data) => {
+            log(`[${data.attack_id}] ${data.message}`, 'info');
+            updateActiveAttacks();
+        });
+        
+        function log(message, type = 'info') {
+            const console = document.getElementById('console');
+            const line = document.createElement('div');
+            line.className = `console-line ${type}`;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            console.appendChild(line);
+            console.scrollTop = console.scrollHeight;
+        }
+        
+        async function startAttack() {
+            const target = document.getElementById('target').value.trim();
+            const attackType = document.getElementById('attack_type').value;
+            const port = parseInt(document.getElementById('port').value);
+            const duration = parseInt(document.getElementById('duration').value);
+            const threads = parseInt(document.getElementById('threads').value);
+            
+            if (!target) {
+                log('Error: Target is required', 'error');
+                return;
+            }
+            
+            log(`Starting ${attackType} attack on ${target}...`, 'info');
+            
+            try {
+                const response = await fetch('/api/start_attack', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({target, attack_type: attackType, port, duration, threads})
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log(data.message, 'success');
+                    activeAttacks[data.attack_id] = {target, type: attackType};
+                    updateActiveAttacks();
+                    updateStats();
+                } else {
+                    log(`Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function stopAttack(attackId) {
+            try {
+                const response = await fetch('/api/stop_attack', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({attack_id: attackId})
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log(`Stopped attack ${attackId}`, 'warning');
+                    delete activeAttacks[attackId];
+                    updateActiveAttacks();
+                }
+            } catch (error) {
+                log(`Error stopping attack: ${error.message}`, 'error');
+            }
+        }
+        
+        async function updateActiveAttacks() {
+            try {
+                const response = await fetch('/api/active_attacks');
+                const attacks = await response.json();
+                
+                const container = document.getElementById('active-attacks');
+                
+                if (attacks.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No active attacks</div>';
+                    return;
+                }
+                
+                container.innerHTML = attacks.map(attack => `
+                    <div class="attack-card">
+                        <div class="attack-card-header">
+                            <span class="attack-type">${attack.type.toUpperCase()}</span>
+                            <span class="attack-status status-${attack.status}">${attack.status}</span>
+                        </div>
+                        <div class="attack-details">
+                            <div>Target: ${attack.target}</div>
+                            <div>Port: ${attack.port}</div>
+                            <div>Threads: ${attack.threads}</div>
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <button class="btn-stop" onclick="stopAttack('${attack.id}')">⏹ Stop</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error updating attacks:', error);
+            }
+        }
+        
+        async function updateStats() {
+            try {
+                const [activeRes, historyRes] = await Promise.all([
+                    fetch('/api/active_attacks'),
+                    fetch('/api/attack_history')
+                ]);
+                
+                const active = await activeRes.json();
+                const history = await historyRes.json();
+                
+                document.getElementById('stat-active').textContent = active.length;
+                document.getElementById('stat-completed').textContent = history.filter(h => h.status === 'completed').length;
+                document.getElementById('stat-total').textContent = history.length + active.length;
+                
+                // Update history list
+                const historyContainer = document.getElementById('attack-history');
+                if (history.length === 0) {
+                    historyContainer.innerHTML = '<div class="empty-state" style="padding: 20px;">No history</div>';
+                } else {
+                    historyContainer.innerHTML = history.slice(-5).reverse().map(h => `
+                        <div class="attack-card" style="padding: 10px;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="font-weight: bold;">${h.type.toUpperCase()}</span>
+                                <span class="attack-status status-${h.status}">${h.status}</span>
+                            </div>
+                            <div style="font-size: 11px; color: #888; margin-top: 5px;">
+                                ${h.target} | ${h.duration}s | ${h.threads} threads
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error updating stats:', error);
+            }
+        }
+        
+        // Refresh every 2 seconds
+        setInterval(() => {
+            updateActiveAttacks();
+            updateStats();
+        }, 2000);
+        
+        // Initial load
+        updateActiveAttacks();
+        updateStats();
+    </script>
+</body>
+</html>
