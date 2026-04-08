@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 attacks.log
 .claude/
+rust_version/target/
+*.o
+*.exe
