@@ -1,0 +1,13 @@
+[package]
+name = "tcp_syn"
+version = "1.0.0"
+edition = "2021"
+description = "TCP SYN Flood module for DoS testing tool"
+
+[lib]
+name = "tcp_syn"
+crate-type = ["staticlib"]
+
+[dependencies]
+rand = "0.8"
+socket2 = { version = "0.5", features = ["all"] }

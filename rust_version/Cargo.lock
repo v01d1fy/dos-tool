@@ -134,6 +134,7 @@ name = "dos-tool"
 version = "1.0.0"
 dependencies = [
  "ctrlc",
+ "libc",
  "rand 0.8.5",
  "reqwest",
  "socket2 0.5.10",

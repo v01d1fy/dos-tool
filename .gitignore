@@ -3,5 +3,7 @@ __pycache__/
 attacks.log
 .claude/
 rust_version/target/
+combined/build/
+combined/rust_modules/target/
 *.o
 *.exe
